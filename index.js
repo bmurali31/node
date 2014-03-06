@@ -1,7 +1,7 @@
 ﻿var _ = require('lodash');
 
-var autoApi = module.exports = function(app, sequelize, options) {
-    this.sequelize = sequelize;
+var autoApi = module.exports = function(app, models, options) {
+    this.models = models;
     this.app = app;
     this.options = _.extend({
         endpoint: '/api'
@@ -25,7 +25,7 @@ autoApi.prototype.handleRequest = function(req, res, next) {
         }
         else if (!!modelName)
         {
-            var model = this.sequelize[modelName];
+            var model = this.models[modelName];
             
             // model doesnt exist? move on...
             if(!model)
@@ -52,7 +52,7 @@ autoApi.prototype.handleRequest = function(req, res, next) {
             else if(!!identifier) {
                 // this is a call to an instance of a model (/api/<model>/<id>)
                 if(req.method === 'POST' && identifier === 'search') {
-                    this.handleModelSearch(this.sequelize, model, req, res);
+                    this.handleModelSearch(this.models, model, req, res);
                 }
                 else if(req.method === 'GET') {
                     this.handleInstanceRetrieve(model, identifier, req, res);
@@ -85,13 +85,13 @@ autoApi.prototype.constructIncludes = function(req, res, model) {
                 for(var key in model.associations){
                     var association = model.associations[key];
                     if (association.target.tableName.toLowerCase() == includeName){
-                        targetModel = this.sequelize[association.target.tableName]
+                        targetModel = this.models[association.target.tableName]
                         targetAlias = key;
                         break;
                     }
                 }
 
-                //var includedModel = this.sequelize[includeName];
+                //var includedModel = this.models[includeName];
                 
                 if(!targetModel) {
                     return { missing: includeName };
@@ -156,7 +156,7 @@ autoApi.prototype.handleModelCreate = function(model, req, res) {
     });
 }
 
-autoApi.prototype.handleModelSearch = function(sequelize, model, req, res) {
+autoApi.prototype.handleModelSearch = function(models, model, req, res) {
     var query = { 
         where: req.body,
         order: null,
